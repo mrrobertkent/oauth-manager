@@ -15,12 +15,38 @@ A secure OAuth token management service for handling OAuth 2.0 client credential
 
 1. Clone the repository
 2. Create a `.env` file based on the `.env.example` (ensure the ENCRYPTION_KEY is exactly 32 characters)
-3. Deploy using Docker Stack:
+3. Deploy using one of the methods below:
+
+### Deploy with Docker Compose (Recommended)
+
+Docker Compose is the simplest way to deploy the service locally or on a VPS:
 
 ```bash
 # Create the .env file with your configuration
 cp .env.example .env
 nano .env  # Edit with your actual credentials
+
+# Make the deployment script executable
+chmod +x scripts/local-deploy.sh
+
+# Deploy locally
+./scripts/local-deploy.sh
+
+# Or manually:
+docker-compose -f docker-compose-local.yml up -d
+```
+
+### Deploy with Docker Swarm
+
+Note: Docker Swarm deployment requires an external network named `automation_net` to be in swarm scope. If you're experiencing network issues, use Docker Compose instead.
+
+```bash
+# Create the .env file with your configuration
+cp .env.example .env
+nano .env  # Edit with your actual credentials
+
+# Make the deployment script executable
+chmod +x scripts/deploy.sh
 
 # Deploy to the automation stack
 docker stack deploy -c docker-compose.yml automation
@@ -39,6 +65,12 @@ The following environment variables are required:
   - `SERVICE_{NAME}_SCOPE` (optional)
   - `SERVICE_{NAME}_AUDIENCE` (optional)
 
+You can generate secure keys using the provided script:
+
+```bash
+node scripts/generate-keys.js
+```
+
 ## API Endpoints
 
 - `GET /health`: Health check endpoint
@@ -53,4 +85,28 @@ To get a token for a service:
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" http://localhost:3001/api/token/example
+```
+
+## Troubleshooting
+
+### Port Already Allocated
+If you encounter an error like `Bind for 127.0.0.1:3001 failed: port is already allocated`, you already have a container using this port. Stop or remove the conflicting container:
+
+```bash
+# Find containers using port 3001
+docker ps | grep 3001
+
+# Stop and remove conflicting containers
+docker stop [CONTAINER_ID]
+docker rm [CONTAINER_ID]
+```
+
+### Directory Structure
+Ensure you aren't running from a nested directory structure. If you see `oauth-manager/oauth-manager`, you should fix this by moving the files:
+
+```bash
+# From nested directory
+cd ~/oauth-manager
+cp -a oauth-manager/. .
+rm -rf oauth-manager
 ```

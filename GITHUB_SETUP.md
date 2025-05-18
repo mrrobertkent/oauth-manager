@@ -54,17 +54,46 @@ git push -u origin main
 
 ## 5. Deploy to VPS
 
-1. SSH into your Hostinger VPS
+1. SSH into your VPS
 2. Clone the repository
 3. Configure environment
-4. Deploy using Docker stack
+4. Deploy using Docker Compose (recommended) or Docker Swarm
+
+### Deployment with Docker Compose (Recommended)
 
 ```bash
 # SSH to VPS
 ssh user@your-vps-hostname
 
 # Clone the repository (using HTTPS instead of SSH)
-git clone https://github.com/mrrobertkent/oauth-manager.git
+git clone https://github.com/yourusername/oauth-manager.git
+cd oauth-manager
+
+# Check for nested directory issues
+# If you have oauth-manager/oauth-manager, fix with:
+# cp -a oauth-manager/. . && rm -rf oauth-manager
+
+# Configure environment
+cp .env.example .env
+nano .env
+
+# Make scripts executable
+chmod +x scripts/local-deploy.sh
+
+# Deploy with Docker Compose
+./scripts/local-deploy.sh
+```
+
+### Deployment with Docker Swarm
+
+Note: Docker Swarm deployment requires an existing swarm setup and an external network named `automation_net` in swarm scope.
+
+```bash
+# SSH to VPS
+ssh user@your-vps-hostname
+
+# Clone the repository (using HTTPS instead of SSH)
+git clone https://github.com/yourusername/oauth-manager.git
 cd oauth-manager
 
 # Configure environment
@@ -74,6 +103,6 @@ nano .env
 # Make scripts executable
 chmod +x scripts/deploy.sh
 
-# Deploy
+# Deploy with Docker Swarm
 ./scripts/deploy.sh
 ``` 
