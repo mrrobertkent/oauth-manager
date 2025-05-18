@@ -63,8 +63,8 @@ git push -u origin main
 # SSH to VPS
 ssh user@your-vps-hostname
 
-# Clone the repository
-git clone git@github.com:yourusername/oauth-manager.git
+# Clone the repository (using HTTPS instead of SSH)
+git clone https://github.com/mrrobertkent/oauth-manager.git
 cd oauth-manager
 
 # Configure environment
