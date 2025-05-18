@@ -53,4 +53,4 @@ To get a token for a service:
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" http://localhost:3001/api/token/example
-``` 
+```
