@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import fs from 'fs';
+import path from 'path';
 
 interface ServiceConfig {
   clientId: string;
@@ -9,11 +11,16 @@ interface ServiceConfig {
   audience?: string;
 }
 
-interface Config {
+export interface OrgConfig {
+  id: string; // internal org id (e.g., org12345678)
+  displayName: string; // human-friendly name
+  services: Record<string, ServiceConfig>; // keyed by serviceType (e.g., zohocrm, zohoprojects)
+}
+
+export interface Config {
   port: number;
   encryptionKey: string;
   apiKey: string;
-  services: Record<string, ServiceConfig>;
 }
 
 // Validate environment variables
@@ -25,43 +32,23 @@ if (!process.env.API_KEY) {
   throw new Error('API_KEY environment variable is required');
 }
 
-// Load service configurations from environment variables
-const services: Record<string, ServiceConfig> = {};
+const ORGS_FILE = path.join(process.cwd(), 'auth-service', 'data', 'orgs.json');
 
-// Find all service-related environment variables
-Object.keys(process.env).forEach(key => {
-  const match = key.match(/^SERVICE_([A-Z0-9_]+)_CLIENT_ID$/);
-  if (match) {
-    const serviceName = match[1].toLowerCase();
-    const clientId = process.env[key];
-    const clientSecret = process.env[`SERVICE_${match[1]}_CLIENT_SECRET`];
-    const tokenUrl = process.env[`SERVICE_${match[1]}_TOKEN_URL`];
-    const scope = process.env[`SERVICE_${match[1]}_SCOPE`];
-    const audience = process.env[`SERVICE_${match[1]}_AUDIENCE`];
+if (!fs.existsSync(ORGS_FILE)) {
+  throw new Error(`Multi-org config file not found: ${ORGS_FILE}. Please create orgs.json with org configs.`);
+}
 
-    if (!clientSecret) {
-      throw new Error(`CLIENT_SECRET for service ${serviceName} is missing`);
-    }
-    
-    if (!tokenUrl) {
-      throw new Error(`TOKEN_URL for service ${serviceName} is missing`);
-    }
+const orgs: Record<string, OrgConfig> = JSON.parse(fs.readFileSync(ORGS_FILE, 'utf8'));
 
-    services[serviceName] = {
-      clientId: clientId!,
-      clientSecret,
-      tokenUrl,
-      scope,
-      audience
-    };
-  }
-});
+export function getOrgConfig(orgId: string): OrgConfig | undefined {
+  return orgs[orgId];
+}
 
 const config: Config = {
   port: parseInt(process.env.PORT || '3001', 10),
   encryptionKey: process.env.ENCRYPTION_KEY,
   apiKey: process.env.API_KEY,
-  services
 };
 
 export default config;
+export { orgs };

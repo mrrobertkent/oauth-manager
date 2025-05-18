@@ -1,103 +1,131 @@
-# Troubleshooting Guide
+# Troubleshooting OAuth Manager
 
-This document covers common issues you might encounter when setting up and running the OAuth Manager service.
+This document provides solutions for common issues you might encounter when using the OAuth Manager.
 
-## Deployment Issues
+## Common Error Codes and Solutions
 
-### Nested Directory Structure
+### API Errors
 
-**Problem:** After cloning from GitHub, you might end up with a nested directory structure (`oauth-manager/oauth-manager`).
+| Status Code | Error Code | Description | Solution |
+|-------------|------------|-------------|----------|
+| 400 | `MISSING_PARAMETERS` | Required parameters are missing in the request. | Ensure your request includes both the `orgId` and `serviceType` parameters. |
+| 401 | `ERR_401` | Unauthorized: Invalid API key. | Check that you're providing a valid API key in the `x-api-key` header. |
+| 404 | `ERR_404` | Org config or service not found. | Verify the `orgId` and `serviceType` exist in your `auth-service/data/orgs.json` file. |
+| 500 | `ERR_500` | Internal server error. | Check the service logs for more detailed information. |
+| 500 | `AUTH_FAILED` | Authentication with the service provider failed. | Verify the client ID and secret for the service are correct. |
 
-**Solution:** Fix the directory structure by moving all files to the parent directory:
+### Common Issues
 
-```bash
-# From the parent directory
-cd ~/oauth-manager
-cp -a oauth-manager/. .
-rm -rf oauth-manager
-```
+#### "Cannot GET /api/token/orgId/serviceType"
 
-### Port Already Allocated
+This error occurs when the requested API endpoint is not formatted correctly.
 
-**Problem:** When starting the container, you encounter: `Bind for 127.0.0.1:3001 failed: port is already allocated`.
+**Solution:**
+- Ensure you're using the correct API endpoint format: `/api/token/:orgId/:serviceType`
+- Verify that both `orgId` and `serviceType` match entries in your `orgs.json` file
+- Make sure the URL path doesn't have any typos or extra characters
 
-**Solution:** Find and remove the conflicting container:
+#### "Org config for 'X' not found"
 
-```bash
-# Find containers using port 3001
-docker ps | grep 3001
+This error occurs when the specified organization ID doesn't exist in the configuration.
 
-# Stop and remove conflicting containers
-docker stop [CONTAINER_ID]
-docker rm [CONTAINER_ID]
-```
+**Solution:**
+- Check your `auth-service/data/orgs.json` file to confirm the organization ID exists
+- Verify the spelling of the organization ID in your request
+- Remember that organization IDs are case-sensitive
 
-### Docker Swarm Network Issues
+#### "Service 'X' not found for org 'Y'"
 
-**Problem:** When using Docker Swarm, you get: `network "automation_net" is declared as external, but it is not in the right scope: "local" instead of "swarm"`.
+This error occurs when the specified service type doesn't exist for the given organization.
 
-**Solution:** Either:
-1. Switch to Docker Compose deployment (`docker-compose -f docker-compose-local.yml up -d`), or
-2. Create the network in swarm scope:
+**Solution:**
+- Check your `auth-service/data/orgs.json` file to confirm the service type exists for that organization
+- Verify the spelling of the service type in your request
+- Add the service configuration to the organization if needed
 
-```bash
-# Remove the existing network
-docker network rm automation_net
+#### Authentication Failures
 
-# Create the network in swarm scope
-docker network create --driver overlay --attachable automation_net
-```
+If you're getting authentication errors when the service tries to obtain tokens:
 
-## Environment Variables
+**Solution:**
+- Verify that client ID and secret values in `orgs.json` are correct
+- Check that the service account has the necessary permissions
+- For Zoho services, ensure the scope and audience values are correctly set
+- Make sure your tokens aren't expired or revoked in the service provider's console
 
-### Encryption Key Issues
+#### Docker Volume Mount Issues
 
-**Problem:** Application fails with error about invalid encryption key length.
+If Docker can't find the `orgs.json` file:
 
-**Solution:** The encryption key must be exactly 32 characters. Generate a new one:
+**Solution:**
+- Ensure you've created the `auth-service/data/orgs.json` file on your host system
+- Check that your volume mount in `docker-compose.yml` is correctly configured: 
+  ```yaml
+  volumes:
+    - ./auth-service/data:/app/auth-service/data
+  ```
+- Verify file permissions allow Docker to read the file
+- Try restarting the Docker container after confirming the file exists
 
-```bash
-node scripts/generate-keys.js
-```
+## Doppler Integration Issues
 
-## Container Management
+### Missing Secrets
 
-### View Container Logs
+If your application can't find environment variables from Doppler:
 
-To check the logs if the service isn't working as expected:
+**Solution:**
+- Verify your Doppler token is correctly set: `export DOPPLER_TOKEN=dp.st.xxxx`
+- Make sure Docker Compose is configured to use the Doppler token
+- Check that the secrets exist in your Doppler project
+- Try running `doppler run -- env` to verify that secrets are correctly loaded
 
-```bash
-# For Docker Compose deployment
-docker-compose -f docker-compose-local.yml logs -f auth-service
+### Container Startup Failures with Doppler
 
-# For Docker Swarm deployment
-docker service logs automation_auth-service
-```
+If your container fails to start with Doppler:
 
-### Remove and Rebuild Container
+**Solution:**
+- Check that the Doppler CLI is correctly installed in your Dockerfile
+- Ensure the `DOPPLER_TOKEN` environment variable is passed to the container
+- Verify the service token has the correct permissions in Doppler
+- Look at container logs for specific Doppler-related errors: 
+  ```
+  docker-compose logs auth-service
+  ```
 
-If you need to start fresh:
+## Configuration Issues
 
-```bash
-# For Docker Compose
-docker-compose -f docker-compose-local.yml down
-docker-compose -f docker-compose-local.yml up -d --build
+### Multiple Organization Setup
 
-# For Docker Swarm
-docker stack rm automation
-docker stack deploy -c docker-compose.yml automation
-```
+Problems with multiple organizations configuration:
 
-## Data Persistence
+**Solution:**
+- Ensure each organization has a unique ID in `orgs.json`
+- Verify that each organization has the required fields (`id`, `displayName`, `services`)
+- Check that each service has the required fields (`clientId`, `clientSecret`, `tokenUrl`)
+- Validate your JSON syntax with a JSON validator
 
-OAuth tokens are stored in a Docker volume. To reset all tokens:
+## Storage Issues
 
-```bash
-# List volumes
-docker volume ls | grep auth-data
+If token storage is failing:
 
-# Remove the volume
-docker volume rm oauth-manager_auth-data
-# or
-docker volume rm automation_auth-data
-``` 
+**Solution:**
+- Check that the `auth-service/data` directory exists and is writable
+- Verify file permissions for the `tokens.json` file
+- If using Docker, ensure the volume mount for the data directory is correct
+- Try deleting the `tokens.json` file and letting the service recreate it
+
+## Additional Help
+
+If you're still experiencing issues:
+
+1. Check the auth service logs for detailed error messages:
+   ```
+   docker-compose logs auth-service
+   ```
+
+2. Try enabling more verbose logging by setting the `NODE_ENV` to `development` in your `.env` file or Doppler config.
+
+3. Report the issue with:
+   - The exact error message you're receiving
+   - Your `docker-compose.yml` configuration (without secrets)
+   - The steps to reproduce the issue 

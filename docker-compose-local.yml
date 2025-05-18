@@ -1,33 +1,16 @@
 services:
   auth-service:
     build: ./auth-service
-    restart: always
-    container_name: oauth-manager-auth-service
-    ports:
-      # Only expose internally or through reverse proxy
-      - "127.0.0.1:3001:3001"
+    entrypoint: ["doppler", "run", "--", "npm", "start"]
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      # Security
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - API_KEY=${API_KEY}
-      # Zoho CRM Service
-      - SERVICE_ZOHOCRM_CLIENT_ID=${SERVICE_ZOHOCRM_CLIENT_ID}
-      - SERVICE_ZOHOCRM_CLIENT_SECRET=${SERVICE_ZOHOCRM_CLIENT_SECRET}
-      - SERVICE_ZOHOCRM_TOKEN_URL=${SERVICE_ZOHOCRM_TOKEN_URL}
-      - SERVICE_ZOHOCRM_SCOPE=${SERVICE_ZOHOCRM_SCOPE:-ZohoCRM.settings.ALL,ZohoCRM.modules.ALL,ZohoCRM.users.ALL,ZohoCRM.org.ALL}
-      - SERVICE_ZOHOCRM_AUDIENCE=${SERVICE_ZOHOCRM_AUDIENCE}
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN}
     volumes:
-      # Persist token data
-      - auth-data:/app/data
+      - ./auth-service/data:/app/auth-service/data
     networks:
       - local_net
+    ports:
+      - "3001:3001"
 
 networks:
   local_net:
     driver: bridge
-
-volumes:
-  auth-data:
-    driver: local 

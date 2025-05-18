@@ -2,11 +2,12 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Update npm to latest version
-RUN npm install -g npm@latest
-
 # Copy package.json and package-lock.json
 COPY package*.json ./
+
+# Install Doppler CLI (requires gnupg for signature verification)
+RUN apk add --no-cache curl gnupg && \
+    curl -Ls https://cli.doppler.com/install.sh | sh
 
 # Install dependencies
 RUN npm ci

@@ -4,6 +4,7 @@ services:
   auth-service:
     build: ./auth-service
     restart: always
+    container_name: oauth-manager-auth-service
     ports:
       # Only expose internally or through reverse proxy
       - "127.0.0.1:3001:3001"
@@ -13,12 +14,12 @@ services:
       # Security
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - API_KEY=${API_KEY}
-      # Services - Add all your OAuth services here
-      - SERVICE_EXAMPLE_CLIENT_ID=${SERVICE_EXAMPLE_CLIENT_ID}
-      - SERVICE_EXAMPLE_CLIENT_SECRET=${SERVICE_EXAMPLE_CLIENT_SECRET}
-      - SERVICE_EXAMPLE_TOKEN_URL=${SERVICE_EXAMPLE_TOKEN_URL}
-      - SERVICE_EXAMPLE_SCOPE=${SERVICE_EXAMPLE_SCOPE}
-      - SERVICE_EXAMPLE_AUDIENCE=${SERVICE_EXAMPLE_AUDIENCE}
+      # Zoho CRM Service
+      - SERVICE_ZOHOCRM_CLIENT_ID=${SERVICE_ZOHOCRM_CLIENT_ID}
+      - SERVICE_ZOHOCRM_CLIENT_SECRET=${SERVICE_ZOHOCRM_CLIENT_SECRET}
+      - SERVICE_ZOHOCRM_TOKEN_URL=${SERVICE_ZOHOCRM_TOKEN_URL}
+      - SERVICE_ZOHOCRM_SCOPE=${SERVICE_ZOHOCRM_SCOPE:-ZohoCRM.settings.ALL,ZohoCRM.modules.ALL,ZohoCRM.users.ALL,ZohoCRM.org.ALL}
+      - SERVICE_ZOHOCRM_AUDIENCE=${SERVICE_ZOHOCRM_AUDIENCE}
     volumes:
       # Persist token data
       - auth-data:/app/data

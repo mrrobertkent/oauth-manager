@@ -1,192 +1,166 @@
 # OAuth Manager
 
-A secure OAuth token management service for handling OAuth 2.0 client credentials flow and token refresh.
+A secure OAuth token management service for handling multiple organizations and service integrations, optimized for Zoho APIs, Docker, and Doppler.
 
 ## Features
 
-- Manages OAuth 2.0 tokens for multiple services
-- Securely stores encrypted tokens
+- Secure token storage with encryption
 - Automatic token refresh
-- API key authentication
-- Rate limiting
-- Docker containerization
+- Support for multiple organizations and service types
+- Rate limiting and security headers
+- Docker and Docker Compose support
+- Integrated with Doppler for secrets management
+- Comprehensive error handling and logging
+- Microservice-ready architecture
 
-## Setup
+## Requirements
 
-1. Clone the repository
-2. Create a `.env` file based on the `.env.example` (ensure the ENCRYPTION_KEY is exactly 32 characters)
-3. Deploy using one of the methods below:
+- Node.js 18+
+- Docker and Docker Compose (for containerized deployment)
+- Zoho Developer Account (for Zoho API integration)
+- Doppler account (recommended for production secrets management)
 
-### Deploy with Docker Compose (Recommended)
+## Quick Start
 
-Docker Compose is the simplest way to deploy the service locally or on a VPS:
+### 1. Clone the repository
 
 ```bash
-# Create the .env file with your configuration
+git clone https://github.com/yourusername/oauth-manager.git
+cd oauth-manager
+```
+
+### 2. Set up configuration
+
+Create an `auth-service/data/orgs.json` file with your organization and service details:
+
+```json
+{
+  "org12345678": {
+    "id": "org12345678",
+    "displayName": "Acme Corp",
+    "services": {
+      "zohocrm": {
+        "clientId": "your-client-id",
+        "clientSecret": "your-client-secret",
+        "tokenUrl": "https://accounts.zoho.com/oauth/v2/token",
+        "scope": "ZohoCRM.settings.ALL,ZohoCRM.modules.ALL",
+        "audience": "ZohoCRM.1234567890"
+      }
+    }
+  }
+}
+```
+
+### 3. Local Development Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Set up local environment
 cp .env.example .env
-nano .env  # Edit with your actual credentials
+node scripts/generate-keys.js >> .env
 
-# Make the deployment script executable
-chmod +x scripts/local-deploy.sh
+# Run the service
+npm run dev
+```
 
-# Deploy locally
-./scripts/local-deploy.sh
+### 4. Docker Deployment
 
-# Or manually:
+```bash
+# Build and start containers
 docker-compose -f docker-compose-local.yml up -d
 ```
 
-### Deploy with Docker Swarm
+## Doppler Integration (Recommended for Production)
 
-Note: Docker Swarm deployment requires an external network named `automation_net` to be in swarm scope. If you're experiencing network issues, use Docker Compose instead.
+OAuth Manager supports Doppler for secure secrets management:
 
-```bash
-# Create the .env file with your configuration
-cp .env.example .env
-nano .env  # Edit with your actual credentials
-
-# Make the deployment script executable
-chmod +x scripts/deploy.sh
-
-# Deploy to the automation stack
-docker stack deploy -c docker-compose.yml automation
-```
-
-## Setup with Zoho CRM
-
-The easiest way to set up the OAuth Manager with Zoho CRM is to use the provided Docker scripts:
+1. [Create a Doppler account](https://doppler.com)
+2. Set up a project and add your secrets (API keys, encryption keys, etc.)
+3. Generate a service token in Doppler
+4. Deploy using Docker Compose with Doppler:
 
 ```bash
-# Set up with your Zoho credentials
-./scripts/setup-zoho-docker.sh "your-client-id" "your-client-secret" "your-org-id"
+# Set your Doppler service token
+export DOPPLER_TOKEN=dp.st.your-token
 
-# Test the service
-./scripts/test-docker.sh
+# Deploy with Docker Compose
+docker-compose up -d
 ```
-
-### Zoho CRM Integration
-
-To use Zoho CRM with this service:
-
-1. Create a Self Client in Zoho API Console at [https://api-console.zoho.com/](https://api-console.zoho.com/)
-2. Generate client ID and secret for your Self Client
-3. Note your organization ID from the Zoho CRM URL (e.g., `https://crm.zoho.com/crm/org/XXXXX/`)
-4. Deploy the OAuth Manager with your Zoho credentials as shown above
-
-The service uses these scopes by default:
-- `ZohoCRM.settings.ALL` - Access to settings API
-- `ZohoCRM.modules.ALL` - Access to all CRM modules
-- `ZohoCRM.users.ALL` - Access to user information
-- `ZohoCRM.org.ALL` - Access to organization data
-
-### Deploy to VPS
-
-To deploy to a VPS with Docker, use the provided script:
-
-```bash
-./scripts/vps-deploy-docker.sh username@hostname "your-client-id" "your-client-secret" "your-org-id"
-```
-
-This script will:
-1. Package and transfer the application to your VPS
-2. Set up the Docker environment with your credentials
-3. Start the service in a Docker container
-
-## Environment Variables
-
-The following environment variables are required:
-
-- `ENCRYPTION_KEY`: 32-character key for token encryption
-- `API_KEY`: Secret key for accessing the API
-- Service-specific variables for each OAuth service:
-  - `SERVICE_{NAME}_CLIENT_ID`
-  - `SERVICE_{NAME}_CLIENT_SECRET`
-  - `SERVICE_{NAME}_TOKEN_URL`
-  - `SERVICE_{NAME}_SCOPE` (optional)
-  - `SERVICE_{NAME}_AUDIENCE` (optional)
-
-You can generate secure keys using the provided script:
-
-```bash
-node scripts/generate-keys.js
-```
-
-## Adding a New OAuth Service
-
-To add a new OAuth service (for example, Zoho Projects), follow these steps:
-
-1. **Add service credentials to your `.env` file**
-
-   Use the following pattern, replacing `ZOHOPROJECTS` with your chosen service name (all caps, no spaces), and fill in your actual credentials:
-
-   ```env
-   SERVICE_ZOHOPROJECTS_CLIENT_ID=your-zoho-projects-client-id
-   SERVICE_ZOHOPROJECTS_CLIENT_SECRET=your-zoho-projects-client-secret
-   SERVICE_ZOHOPROJECTS_TOKEN_URL=https://accounts.zoho.com/oauth/v2/token
-   SERVICE_ZOHOPROJECTS_SCOPE=ZohoProjects.portals.READ,ZohoProjects.projects.ALL
-   # Optionally, add audience if required by the service:
-   # SERVICE_ZOHOPROJECTS_AUDIENCE=your-audience
-   ```
-
-   - The service name (e.g., `zohoprojects`) will be used as the `serviceId` in the API endpoint.
-   - You can add as many services as you need, each with a unique name.
-
-2. **Restart the OAuth Manager service**
-
-   This ensures the new environment variables are loaded. For Docker Compose:
-   ```bash
-   docker-compose -f docker-compose-local.yml up -d --build
-   ```
-   Or use your deployment method.
-
-3. **Access the new service's token endpoint**
-
-   Use the service name (lowercase) as the `serviceId` in the API call:
-   ```bash
-   curl -H "x-api-key: YOUR_API_KEY" https://auth.convergex.app/api/token/zohoprojects
-   ```
-   Replace `YOUR_API_KEY` with your actual API key from the `.env` file.
-
-**Note:**
-- The `serviceId` in the endpoint must match the name you used in your `.env` variables (case-insensitive).
-- You can repeat these steps for any new OAuth service you want to add.
 
 ## API Endpoints
 
-- `GET /health`: Health check endpoint
-- `GET /api/token/:serviceId`: Get valid token for a service (API key required)
-- `GET /api/n8n/token/:serviceId`: Get token as plain text for n8n integration
-- `GET /api/admin/status`: Get service statuses
-- `POST /api/admin/revoke/:serviceId`: Revoke tokens for a service
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|--------------|
+| `/health` | GET | Health check | No |
+| `/api/token/:orgId/:serviceType` | GET | Get a valid access token | Yes (API Key) |
+| `/api/n8n/token/:orgId/:serviceType` | GET | Get token for n8n integrations | Yes (API Key) |
+| `/api/admin/status` | GET | Get status of all token services | Yes (Admin) |
+| `/api/admin/revoke/:orgId/:serviceType` | POST | Revoke cached tokens | Yes (Admin) |
 
-## Usage
+## Error Handling
 
-To get a token for a service:
+The service provides detailed error responses to help troubleshoot issues:
 
-```bash
-curl -H "x-api-key: YOUR_API_KEY" http://localhost:3001/api/token/example
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Service 'unknownservice' not found for org 'org12345678'",
+    "code": "ERR_404"
+  }
+}
 ```
 
-## Troubleshooting
+Common error codes include:
+- `MISSING_PARAMETERS`: Required parameters missing
+- `ERR_401`: Authentication failure
+- `ERR_404`: Resource not found
+- `AUTH_FAILED`: Provider authentication failed
+- `ERR_500`: Unexpected server error
 
-### Port Already Allocated
-If you encounter an error like `Bind for 127.0.0.1:3001 failed: port is already allocated`, you already have a container using this port. Stop or remove the conflicting container:
+For more details, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
-```bash
-# Find containers using port 3001
-docker ps | grep 3001
+## Multi-Organization Setup
 
-# Stop and remove conflicting containers
-docker stop [CONTAINER_ID]
-docker rm [CONTAINER_ID]
-```
+OAuth Manager supports multiple organizations, with each organization supporting multiple services:
 
-### Directory Structure
-Ensure you aren't running from a nested directory structure. If you see `oauth-manager/oauth-manager`, you should fix this by moving the files:
+1. Each organization needs a unique ID (`org12345678`)
+2. Each organization can have multiple services (e.g., `zohocrm`, `zohoprojects`)
+3. Each service has its own credentials and configuration
 
-```bash
-# From nested directory
-cd ~/oauth-manager
-cp -a oauth-manager/. .
-rm -rf oauth-manager
-```
+For more detailed information, see [auth-service/README.md](auth-service/README.md).
+
+## Security Considerations
+
+- Never commit `orgs.json` to version control (it's in `.gitignore`)
+- In production, use Doppler or another secrets manager
+- All tokens are encrypted at rest using AES-256
+- API endpoints are protected by API key authentication
+- Rate limiting is enabled to prevent abuse
+
+## Documentation
+
+- [AUTH_WEB_UI_PLAN.md](AUTH_WEB_UI_PLAN.md) - Future UI plans
+- [DOCKER_COMMANDS.md](DOCKER_COMMANDS.md) - Docker reference
+- [GITHUB_SETUP.md](GITHUB_SETUP.md) - GitHub integration guide
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
+- [ZOHO_SETUP.md](ZOHO_SETUP.md) - Zoho integration guide
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Zoho API Documentation](https://www.zoho.com/crm/developer/docs/api/v2/oauth-overview.html)
+- [Doppler](https://doppler.com) for secrets management

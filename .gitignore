@@ -24,4 +24,27 @@ data/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# Added by Claude Task Master
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# Org/service secrets
+auth-service/data/orgs.json
+
+# Dependency directories
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS specific
+# Task files
+tasks.json
+tasks/ 
