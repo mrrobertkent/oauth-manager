@@ -111,6 +111,46 @@ You can generate secure keys using the provided script:
 node scripts/generate-keys.js
 ```
 
+## Adding a New OAuth Service
+
+To add a new OAuth service (for example, Zoho Projects), follow these steps:
+
+1. **Add service credentials to your `.env` file**
+
+   Use the following pattern, replacing `ZOHOPROJECTS` with your chosen service name (all caps, no spaces), and fill in your actual credentials:
+
+   ```env
+   SERVICE_ZOHOPROJECTS_CLIENT_ID=your-zoho-projects-client-id
+   SERVICE_ZOHOPROJECTS_CLIENT_SECRET=your-zoho-projects-client-secret
+   SERVICE_ZOHOPROJECTS_TOKEN_URL=https://accounts.zoho.com/oauth/v2/token
+   SERVICE_ZOHOPROJECTS_SCOPE=ZohoProjects.portals.READ,ZohoProjects.projects.ALL
+   # Optionally, add audience if required by the service:
+   # SERVICE_ZOHOPROJECTS_AUDIENCE=your-audience
+   ```
+
+   - The service name (e.g., `zohoprojects`) will be used as the `serviceId` in the API endpoint.
+   - You can add as many services as you need, each with a unique name.
+
+2. **Restart the OAuth Manager service**
+
+   This ensures the new environment variables are loaded. For Docker Compose:
+   ```bash
+   docker-compose -f docker-compose-local.yml up -d --build
+   ```
+   Or use your deployment method.
+
+3. **Access the new service's token endpoint**
+
+   Use the service name (lowercase) as the `serviceId` in the API call:
+   ```bash
+   curl -H "x-api-key: YOUR_API_KEY" https://auth.convergex.app/api/token/zohoprojects
+   ```
+   Replace `YOUR_API_KEY` with your actual API key from the `.env` file.
+
+**Note:**
+- The `serviceId` in the endpoint must match the name you used in your `.env` variables (case-insensitive).
+- You can repeat these steps for any new OAuth service you want to add.
+
 ## API Endpoints
 
 - `GET /health`: Health check endpoint
