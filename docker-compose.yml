@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: ./auth-service
+    restart: always
+    ports:
+      # Only expose internally or through reverse proxy
+      - "127.0.0.1:3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      # Security
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - API_KEY=${API_KEY}
+      # Services - Add all your OAuth services here
+      - SERVICE_EXAMPLE_CLIENT_ID=${SERVICE_EXAMPLE_CLIENT_ID}
+      - SERVICE_EXAMPLE_CLIENT_SECRET=${SERVICE_EXAMPLE_CLIENT_SECRET}
+      - SERVICE_EXAMPLE_TOKEN_URL=${SERVICE_EXAMPLE_TOKEN_URL}
+      - SERVICE_EXAMPLE_SCOPE=${SERVICE_EXAMPLE_SCOPE}
+      - SERVICE_EXAMPLE_AUDIENCE=${SERVICE_EXAMPLE_AUDIENCE}
+    volumes:
+      # Persist token data
+      - auth-data:/app/data
+    networks:
+      - automation_net
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      replicas: 1
+
+networks:
+  automation_net:
+    external: true
+    name: automation_net
+
+volumes:
+  auth-data:
+    driver: local
