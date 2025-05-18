@@ -52,6 +52,46 @@ chmod +x scripts/deploy.sh
 docker stack deploy -c docker-compose.yml automation
 ```
 
+## Setup with Zoho CRM
+
+The easiest way to set up the OAuth Manager with Zoho CRM is to use the provided Docker scripts:
+
+```bash
+# Set up with your Zoho credentials
+./scripts/setup-zoho-docker.sh "your-client-id" "your-client-secret" "your-org-id"
+
+# Test the service
+./scripts/test-docker.sh
+```
+
+### Zoho CRM Integration
+
+To use Zoho CRM with this service:
+
+1. Create a Self Client in Zoho API Console at [https://api-console.zoho.com/](https://api-console.zoho.com/)
+2. Generate client ID and secret for your Self Client
+3. Note your organization ID from the Zoho CRM URL (e.g., `https://crm.zoho.com/crm/org/XXXXX/`)
+4. Deploy the OAuth Manager with your Zoho credentials as shown above
+
+The service uses these scopes by default:
+- `ZohoCRM.settings.ALL` - Access to settings API
+- `ZohoCRM.modules.ALL` - Access to all CRM modules
+- `ZohoCRM.users.ALL` - Access to user information
+- `ZohoCRM.org.ALL` - Access to organization data
+
+### Deploy to VPS
+
+To deploy to a VPS with Docker, use the provided script:
+
+```bash
+./scripts/vps-deploy-docker.sh username@hostname "your-client-id" "your-client-secret" "your-org-id"
+```
+
+This script will:
+1. Package and transfer the application to your VPS
+2. Set up the Docker environment with your credentials
+3. Start the service in a Docker container
+
 ## Environment Variables
 
 The following environment variables are required:
