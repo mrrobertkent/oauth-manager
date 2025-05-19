@@ -1,11 +1,11 @@
 services:
   auth-service:
     build: ./auth-service
-    entrypoint: ["doppler", "run", "--", "npm", "start"]
+    entrypoint: ["doppler", "run", "--", "node", "dist/index.js"]
     environment:
       - DOPPLER_TOKEN=${DOPPLER_TOKEN}
     volumes:
-      - ./auth-service/data:/app/auth-service/data
+      - ./auth-service/data:/app/data
     networks:
       - local_net
     ports:

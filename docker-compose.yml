@@ -8,6 +8,7 @@ services:
     ports:
       # Only expose internally or through reverse proxy
       - "127.0.0.1:3001:3001"
+    command: ["node", "dist/index.js"]
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -30,6 +31,12 @@ services:
         condition: any
         delay: 5s
       replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   automation_net:

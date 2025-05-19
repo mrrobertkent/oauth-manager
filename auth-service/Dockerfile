@@ -1,6 +1,10 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
+# Set working directory
 WORKDIR /app
+
+# Set NODE_ENV to production
+ENV NODE_ENV=production
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
@@ -18,6 +22,14 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
+# Non-root user for better security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -G nodejs && \
+    chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
 # Expose port
 EXPOSE 3001
 
@@ -25,4 +37,4 @@ EXPOSE 3001
 VOLUME /app/data
 
 # Run the application
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
