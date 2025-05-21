@@ -5,7 +5,8 @@ services:
     environment:
       - DOPPLER_TOKEN=${DOPPLER_TOKEN}
     volumes:
-      - ./auth-service/data:/app/data
+      - ./auth-service/data:/app/auth-service/data
+      # - ./auth-service/data/orgs.json:/app/auth-service/data/orgs.json:ro
     networks:
       - local_net
     ports:
